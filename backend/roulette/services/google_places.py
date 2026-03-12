@@ -1,15 +1,13 @@
 import requests
-from math import radians, cos
 
 
-def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radius=3000):
+def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radius=5000):
     """
     Search for restaurants near a location using OpenStreetMap Overpass API.
     Completely free, no API key needed.
     """
     overpass_url = "https://overpass-api.de/api/interpreter"
 
-    # Build cuisine filter if provided
     cuisine_filter = ""
     if cuisine:
         cuisine_lower = cuisine.lower()
@@ -21,7 +19,7 @@ def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radi
       node["amenity"="restaurant"]{cuisine_filter}(around:{radius},{latitude},{longitude});
       way["amenity"="restaurant"]{cuisine_filter}(around:{radius},{latitude},{longitude});
     );
-    out center body qt 15;
+    out center body qt 20;
     """
 
     try:
@@ -31,7 +29,6 @@ def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radi
         print(f"Overpass API error: {e}")
         return []
 
-    # Map budget to a fake price level for display
     budget_price_map = {"$": 1, "$$": 2, "$$$": 3, "$$$$": 4}
     price_level = budget_price_map.get(budget, 2)
 
@@ -42,14 +39,12 @@ def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radi
         if not name:
             continue
 
-        # Get coordinates (nodes have lat/lon directly, ways have center)
         lat = element.get("lat") or element.get("center", {}).get("lat")
         lon = element.get("lon") or element.get("center", {}).get("lon")
 
         if not lat or not lon:
             continue
 
-        # Build address from available tags
         address_parts = []
         if tags.get("addr:housenumber"):
             address_parts.append(tags["addr:housenumber"])
@@ -59,9 +54,7 @@ def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radi
             address_parts.append(tags["addr:city"])
         address = ", ".join(address_parts) if address_parts else tags.get("addr:full", "")
 
-        # Get cuisine type
         cuisine_type = tags.get("cuisine", cuisine or "restaurant")
-        # Clean up semicolons in OSM cuisine tags (e.g. "italian;pizza")
         if ";" in cuisine_type:
             cuisine_type = cuisine_type.split(";")[0]
 
@@ -69,13 +62,13 @@ def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radi
             "place_id": str(element.get("id", "")),
             "name": name,
             "address": address,
-            "rating": None,  # OSM doesn't have ratings
+            "rating": None,
             "price_level": price_level,
-            "photo_url": "",  # OSM doesn't have photos
+            "photo_url": "",
             "cuisine_type": cuisine_type,
             "latitude": lat,
             "longitude": lon,
         })
 
     print(f"OVERPASS RESPONSE: Found {len(restaurants)} restaurants")
-    return restaurants
+    return restaurants[:15]
