@@ -1,72 +1,81 @@
 import requests
-from django.conf import settings
+from math import radians, cos
 
 
 def search_nearby_restaurants(latitude, longitude, cuisine="", budget="$$", radius=3000):
     """
-    Search for restaurants near a location using Google Places API (legacy).
-
-    Args:
-        latitude: float
-        longitude: float
-        cuisine: cuisine type string (e.g., "italian", "mexican")
-        budget: one of "$", "$$", "$$$", "$$$$"
-        radius: search radius in meters (default 3km)
-
-    Returns:
-        list of restaurant dicts
+    Search for restaurants near a location using OpenStreetMap Overpass API.
+    Completely free, no API key needed.
     """
-    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    overpass_url = "https://overpass-api.de/api/interpreter"
 
-    # Map budget to min/max price levels (0-4)
-    budget_map = {
-        "$": (0, 1),
-        "$$": (1, 2),
-        "$$$": (2, 3),
-        "$$$$": (3, 4),
-    }
-    min_price, max_price = budget_map.get(budget, (1, 2))
-
-    params = {
-        "location": f"{latitude},{longitude}",
-        "radius": radius,
-        "type": "restaurant",
-        "key": settings.GOOGLE_PLACES_API_KEY,
-        "minprice": min_price,
-        "maxprice": max_price,
-    }
-
+    # Build cuisine filter if provided
+    cuisine_filter = ""
     if cuisine:
-        params["keyword"] = cuisine
+        cuisine_lower = cuisine.lower()
+        cuisine_filter = f'["cuisine"~"{cuisine_lower}",i]'
 
-    response = requests.get(url, params=params)
-    data = response.json()
+    query = f"""
+    [out:json][timeout:10];
+    (
+      node["amenity"="restaurant"]{cuisine_filter}(around:{radius},{latitude},{longitude});
+      way["amenity"="restaurant"]{cuisine_filter}(around:{radius},{latitude},{longitude});
+    );
+    out center body qt 15;
+    """
+
+    try:
+        response = requests.post(overpass_url, data={"data": query}, timeout=15)
+        data = response.json()
+    except Exception as e:
+        print(f"Overpass API error: {e}")
+        return []
+
+    # Map budget to a fake price level for display
+    budget_price_map = {"$": 1, "$$": 2, "$$$": 3, "$$$$": 4}
+    price_level = budget_price_map.get(budget, 2)
 
     restaurants = []
-    for place in data.get("results", []):
-        photo_url = ""
-        photos = place.get("photos", [])
-        if photos:
-            photo_ref = photos[0].get("photo_reference", "")
-            if photo_ref:
-                photo_url = (
-                    f"https://maps.googleapis.com/maps/api/place/photo"
-                    f"?maxwidth=400&photo_reference={photo_ref}"
-                    f"&key={settings.GOOGLE_PLACES_API_KEY}"
-                )
+    for element in data.get("elements", []):
+        tags = element.get("tags", {})
+        name = tags.get("name")
+        if not name:
+            continue
 
-        location = place.get("geometry", {}).get("location", {})
+        # Get coordinates (nodes have lat/lon directly, ways have center)
+        lat = element.get("lat") or element.get("center", {}).get("lat")
+        lon = element.get("lon") or element.get("center", {}).get("lon")
+
+        if not lat or not lon:
+            continue
+
+        # Build address from available tags
+        address_parts = []
+        if tags.get("addr:housenumber"):
+            address_parts.append(tags["addr:housenumber"])
+        if tags.get("addr:street"):
+            address_parts.append(tags["addr:street"])
+        if tags.get("addr:city"):
+            address_parts.append(tags["addr:city"])
+        address = ", ".join(address_parts) if address_parts else tags.get("addr:full", "")
+
+        # Get cuisine type
+        cuisine_type = tags.get("cuisine", cuisine or "restaurant")
+        # Clean up semicolons in OSM cuisine tags (e.g. "italian;pizza")
+        if ";" in cuisine_type:
+            cuisine_type = cuisine_type.split(";")[0]
 
         restaurants.append({
-            "place_id": place.get("place_id", ""),
-            "name": place.get("name", "Unknown"),
-            "address": place.get("vicinity", ""),
-            "rating": place.get("rating"),
-            "price_level": place.get("price_level"),
-            "photo_url": photo_url,
-            "cuisine_type": cuisine or place.get("types", ["restaurant"])[0],
-            "latitude": location.get("lat"),
-            "longitude": location.get("lng"),
+            "place_id": str(element.get("id", "")),
+            "name": name,
+            "address": address,
+            "rating": None,  # OSM doesn't have ratings
+            "price_level": price_level,
+            "photo_url": "",  # OSM doesn't have photos
+            "cuisine_type": cuisine_type,
+            "latitude": lat,
+            "longitude": lon,
         })
 
+    print(f"OVERPASS RESPONSE: Found {len(restaurants)} restaurants")
     return restaurants

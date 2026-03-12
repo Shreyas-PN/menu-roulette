@@ -36,7 +36,6 @@ def get_cuisine_from_mood_openai(mood_text):
     )
 
     text = response.choices[0].message.content.strip()
-    # Strip markdown fences if present
     text = text.replace("```json", "").replace("```", "").strip()
     return json.loads(text)
 
@@ -46,7 +45,7 @@ def get_cuisine_from_mood_gemini(mood_text):
     import google.generativeai as genai
 
     genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     response = model.generate_content(
         f"{SYSTEM_PROMPT}\n\nUser mood: {mood_text}",

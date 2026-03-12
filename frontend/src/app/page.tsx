@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Loader2, ArrowRight, Users } from "lucide-react";
+import { MapPin, Loader2, ArrowRight, Users, Search, X } from "lucide-react";
 import Header from "@/components/Header";
 import BudgetSlider from "@/components/BudgetSlider";
 import CuisineSelector from "@/components/CuisineSelector";
@@ -20,20 +20,65 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLabel, setLocationLabel] = useState("");
+  const [locationMode, setLocationMode] = useState<"gps" | "manual">("gps");
+  const [manualAddress, setManualAddress] = useState("");
+  const [geocodeLoading, setGeocodeLoading] = useState(false);
   const [error, setError] = useState("");
 
   const getLocation = () => {
     setLocationLoading(true);
+    setError("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationLabel("Current location");
         setLocationLoading(false);
       },
       () => {
-        setError("Location access needed to find nearby restaurants.");
+        setError("Couldn't get your location. Try entering it manually.");
+        setLocationMode("manual");
         setLocationLoading(false);
       }
     );
+  };
+
+  const geocodeAddress = async () => {
+    if (!manualAddress.trim()) return;
+    setGeocodeLoading(true);
+    setError("");
+
+    try {
+      // Using OpenStreetMap Nominatim (free, no API key needed)
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          manualAddress.trim()
+        )}&limit=1`,
+        { headers: { "User-Agent": "MenuRoulette/1.0" } }
+      );
+      const data = await res.json();
+
+      if (data.length === 0) {
+        setError("Couldn't find that location. Try a city name or zip code.");
+        return;
+      }
+
+      setLocation({
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+      });
+      setLocationLabel(data[0].display_name.split(",").slice(0, 2).join(","));
+    } catch {
+      setError("Geocoding failed. Check your connection and try again.");
+    } finally {
+      setGeocodeLoading(false);
+    }
+  };
+
+  const clearLocation = () => {
+    setLocation(null);
+    setLocationLabel("");
+    setManualAddress("");
   };
 
   const handleCreate = async () => {
@@ -158,25 +203,87 @@ export default function Home() {
             {/* Location */}
             <div className="space-y-2">
               <label className="text-sm text-neutral-400">Location</label>
+
               {location ? (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                  <MapPin className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-green-400">Location set</span>
+                <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-green-400 truncate max-w-[250px]">
+                      {locationLabel}
+                    </span>
+                  </div>
+                  <button onClick={clearLocation} className="text-neutral-500 hover:text-white">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               ) : (
-                <button
-                  onClick={getLocation}
-                  disabled={locationLoading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
-                             bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  {locationLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                <>
+                  {/* Toggle between GPS and manual */}
+                  <div className="flex gap-1 p-1 rounded-xl bg-white/5">
+                    <button
+                      onClick={() => setLocationMode("gps")}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs transition-colors ${
+                        locationMode === "gps"
+                          ? "bg-orange-500 text-white"
+                          : "text-neutral-400 hover:text-white"
+                      }`}
+                    >
+                      Use my location
+                    </button>
+                    <button
+                      onClick={() => setLocationMode("manual")}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs transition-colors ${
+                        locationMode === "manual"
+                          ? "bg-orange-500 text-white"
+                          : "text-neutral-400 hover:text-white"
+                      }`}
+                    >
+                      Enter address
+                    </button>
+                  </div>
+
+                  {locationMode === "gps" ? (
+                    <button
+                      onClick={getLocation}
+                      disabled={locationLoading}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+                                 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                    >
+                      {locationLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <MapPin className="w-4 h-4" />
+                      )}
+                      <span className="text-sm">Detect My Location</span>
+                    </button>
                   ) : (
-                    <MapPin className="w-4 h-4" />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={manualAddress}
+                        onChange={(e) => setManualAddress(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && geocodeAddress()}
+                        placeholder="e.g. Boston, MA or 10001"
+                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm
+                                   placeholder:text-neutral-600 focus:outline-none focus:border-orange-500/50
+                                   transition-colors"
+                      />
+                      <button
+                        onClick={geocodeAddress}
+                        disabled={geocodeLoading || !manualAddress.trim()}
+                        className="px-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-600
+                                   disabled:opacity-40 disabled:cursor-not-allowed transition-colors
+                                   flex items-center gap-2"
+                      >
+                        {geocodeLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Search className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   )}
-                  <span className="text-sm">Enable Location</span>
-                </button>
+                </>
               )}
             </div>
 
