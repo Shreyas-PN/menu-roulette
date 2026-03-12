@@ -68,14 +68,23 @@ DATABASES = {
 }
 
 # Channels (WebSocket)
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(os.getenv("REDIS_HOST", "localhost"), 6379)],
-        },
+# Channels (WebSocket)
+REDIS_HOST = os.getenv("REDIS_HOST", "")
+if REDIS_HOST:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(REDIS_HOST, 6379)],
+            },
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
 
 # CORS
 CORS_ALLOWED_ORIGINS = os.getenv(
