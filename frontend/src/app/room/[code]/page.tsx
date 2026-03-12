@@ -1,26 +1,34 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import VotingRoom from "@/components/VotingRoom";
+
+interface Session {
+  participantId: string;
+  nickname: string;
+  isHost: boolean;
+}
 
 export default function RoomPage() {
   const params = useParams();
   const code = (params.code as string).toUpperCase();
+  const [session, setSession] = useState<Session | null>(null);
+  const [checked, setChecked] = useState(false);
 
-  const session = useMemo(() => {
-    if (typeof window === "undefined") return null;
+  useEffect(() => {
     const pid = sessionStorage.getItem("participantId");
     const name = sessionStorage.getItem("nickname");
     const host = sessionStorage.getItem("isHost");
     if (pid && name) {
-      return { participantId: pid, nickname: name, isHost: host === "true" };
+      setSession({ participantId: pid, nickname: name, isHost: host === "true" });
     }
-    return null;
+    setChecked(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!session) {
+  if (!checked || !session) {
     return (
       <div className="min-h-screen">
         <Header />
