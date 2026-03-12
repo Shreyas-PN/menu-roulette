@@ -4,22 +4,20 @@
 
 A real-time multiplayer food decision app. Create a room, invite friends, vote on nearby restaurants, and spin the wheel to settle the debate once and for all.
 
+**Live:** [menu-roulette-vercel.vercel.app](https://menu-roulette-vercel.vercel.app)
+
 ![Next.js](https://img.shields.io/badge/Next.js_14-black?style=flat&logo=next.js)
 ![Django](https://img.shields.io/badge/Django_5-092E20?style=flat&logo=django)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 
 ## Screenshots
 
 <p align="center">
   <img src="docs/screenshots/home.png" width="45%" alt="Home page" />
-  <img src="docs/screenshots/home2.png" width="45%" alt="Home page" />
-</p>
-<p align="center">
   <img src="docs/screenshots/setup.png" width="45%" alt="Room setup" />
-  <img src="docs/screenshots/vibe-check.png" width="45%" alt="vibe-check" />
+</p>
 <p align="center">
   <img src="docs/screenshots/vote.png" width="45%" alt="Voting on restaurants" />
   <img src="docs/screenshots/spin.png" width="45%" alt="Spin the wheel" />
@@ -27,12 +25,13 @@ A real-time multiplayer food decision app. Create a room, invite friends, vote o
 
 ## Features
 
-- **AI Mood Picker** - Describe your craving in natural language ("cozy rainy day vibes"), and Gemini AI picks the perfect cuisine for you
-- **Live Voting Rooms** - Friends join via a 6-character room code and upvote/downvote restaurants in real-time over WebSockets
-- **Animated Spin Wheel** - Framer Motion-powered roulette wheel weighted by votes — more upvotes = higher chance of landing
-- **Restaurant Discovery** - Pulls real restaurant data from OpenStreetMap via the Overpass API based on your location, budget, and cuisine preference
-- **Manual or GPS Location** - Use browser geolocation or type in any city/address (geocoded via OpenStreetMap Nominatim)
-- **Budget Filters** - From $ street food to $$$$ fine dining
+- **AI Mood Picker** — Describe your craving in natural language ("cozy rainy day vibes"), and AI picks the perfect cuisine for you
+- **Live Voting Rooms** — Friends join via a 6-character room code and upvote/downvote restaurants in real-time over WebSockets
+- **Animated Spin Wheel** — Framer Motion-powered roulette wheel weighted by votes. More upvotes = higher chance of landing
+- **Restaurant Discovery** — Pulls real restaurant data from OpenStreetMap via the Overpass API based on your location, budget, and cuisine preference
+- **Manual or GPS Location** — Use browser geolocation or type in any city/address (geocoded via OpenStreetMap Nominatim)
+- **Budget Filters** — From $ street food to $$$$ fine dining
+- **Graceful AI Fallback** — If AI quota is exceeded, the app picks a random cuisine with a fun message instead of breaking
 
 ## Tech Stack
 
@@ -41,27 +40,28 @@ A real-time multiplayer food decision app. Create a room, invite friends, vote o
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS v4, Framer Motion |
 | Backend | Django 5, Django REST Framework, Django Channels (WebSockets) |
 | Database | PostgreSQL 16 |
-| Real-time | Redis 7 + Django Channels |
-| AI | Google Gemini 2.0 Flash (configurable: OpenAI also supported) |
+| Real-time | Redis (local) / In-Memory Channel Layer (production) |
+| AI | Groq (Llama 3.3 70B) with Gemini and OpenAI as configurable alternatives |
 | Restaurant Data | OpenStreetMap Overpass API (free, no key required) |
 | Geocoding | OpenStreetMap Nominatim (free, no key required) |
 | Infra | Docker Compose, GitHub Actions CI |
+| Deployment | Vercel (frontend) + Render (backend + PostgreSQL) |
 
 ## Architecture
 
 ```
 ┌─────────────────┐         ┌──────────────────────┐
 │   Next.js App   │◄──REST──►  Django REST API      │
-│   (port 3000)   │         │  (port 8000)          │
+│   (Vercel)      │         │  (Render)             │
 │                 │◄──WS────►  Django Channels       │
 └─────────────────┘         └──────────┬───────────┘
                                        │
                           ┌────────────┼────────────┐
                           │            │            │
                      PostgreSQL     Redis      External
-                      (data)      (WebSocket   APIs
-                                  channel)   (Overpass,
-                                             Gemini)
+                      (Render)    (local/     APIs
+                                  in-memory)  (Overpass,
+                                              Groq)
 ```
 
 ## Quick Start
@@ -78,7 +78,14 @@ A real-time multiplayer food decision app. Create a room, invite friends, vote o
 git clone https://github.com/Shreyas-PN/menu-roulette.git
 cd menu-roulette
 cp .env.example .env
-# Edit .env with your Gemini API key (get one at https://aistudio.google.com/apikey)
+```
+
+Edit `.env` with your API keys:
+```
+GROQ_API_KEY=your_groq_key        # Get one free at https://console.groq.com/keys
+GEMINI_API_KEY=your_gemini_key    # Optional, from https://aistudio.google.com/apikey
+AI_PROVIDER=groq
+DB_PORT=5433
 ```
 
 ### 2. Start databases
@@ -111,11 +118,11 @@ Open **http://localhost:3000** and start spinning.
 
 ## How It Works
 
-1. **Create a Room** - Enter your name, set location (GPS or manual), pick a budget and optional cuisine
-2. **Share the Code** - Give the 6-character room code to friends
-3. **Load Restaurants** - Host clicks "Find Restaurants Nearby" to pull restaurants from OpenStreetMap
-4. **Vote** - Everyone upvotes or downvotes restaurants in real-time
-5. **Spin** - Hit the wheel. Restaurants with more upvotes have a higher chance of winning. Eat there. No debates.
+1. **Create a Room** — Enter your name, set location (GPS or manual), pick a budget and optional cuisine
+2. **Share the Code** — Give the 6-character room code to friends
+3. **Load Restaurants** — Host clicks "Find Restaurants Nearby" to pull restaurants from OpenStreetMap
+4. **Vote** — Everyone upvotes or downvotes restaurants in real-time
+5. **Spin** — Hit the wheel. Restaurants with more upvotes have a higher chance of winning. Eat there. No debates.
 
 ## API Endpoints
 
@@ -167,7 +174,7 @@ menu-roulette/
 │   │   ├── serializers.py   # DRF serializers
 │   │   ├── services/
 │   │   │   ├── google_places.py  # OpenStreetMap Overpass integration
-│   │   │   └── ai_mood.py       # Gemini/OpenAI mood-to-cuisine
+│   │   │   └── ai_mood.py       # Groq/Gemini/OpenAI mood-to-cuisine
 │   │   └── tests.py
 │   ├── Dockerfile
 │   └── requirements.txt
@@ -186,14 +193,16 @@ menu-roulette/
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes* | Google Gemini API key for AI mood picker |
-| `OPENAI_API_KEY` | No | Alternative to Gemini |
-| `AI_PROVIDER` | No | `gemini` (default) or `openai` |
-| `DB_PORT` | No | PostgreSQL port (default: 5432) |
+| `GROQ_API_KEY` | Yes* | Groq API key for AI mood picker (free at console.groq.com) |
+| `GEMINI_API_KEY` | No | Google Gemini as alternative AI provider |
+| `OPENAI_API_KEY` | No | OpenAI as alternative AI provider |
+| `AI_PROVIDER` | No | `groq` (default), `gemini`, or `openai` |
+| `DB_PORT` | No | PostgreSQL port (default: 5432, use 5433 if local PG conflicts) |
 | `DB_HOST` | No | PostgreSQL host (default: localhost) |
 | `DJANGO_SECRET_KEY` | No | Django secret key (auto-generated in dev) |
+| `REDIS_HOST` | No | Redis host. If empty, uses in-memory channel layer |
 
-*Required only for the AI mood-to-cuisine feature. The app works without it.
+*Required only for the AI mood-to-cuisine feature. The app works without it via random fallback.
 
 ## License
 
