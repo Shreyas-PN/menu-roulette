@@ -31,25 +31,26 @@ export default function VotingRoom({
   const { send, isConnected } = useWebSocket({
     roomCode,
     onMessage: (data) => {
-      if (data.type === "room_state") {
-        setRestaurants(data.restaurants);
-        setParticipants(data.participants);
-      } else if (data.type === "vote_update") {
+      const msg = data as Record<string, unknown>;
+      if (msg.type === "room_state") {
+        setRestaurants(msg.restaurants as Restaurant[]);
+        setParticipants(msg.participants as Participant[]);
+      } else if (msg.type === "vote_update") {
+        const updated = msg.restaurant as Restaurant;
         setRestaurants((prev) =>
-          prev.map((r) => (r.id === data.restaurant.id ? data.restaurant : r))
+          prev.map((r) => (r.id === updated.id ? updated : r))
         );
-      } else if (data.type === "spin_result") {
-        setWinnerId(data.winner_id);
-      } else if (data.type === "participant_joined") {
-        // Refresh participants list
+      } else if (msg.type === "spin_result") {
+        setWinnerId(msg.winner_id as string);
+      } else if (msg.type === "participant_joined") {
         api.getRoom(roomCode).then((room) => setParticipants(room.participants));
       }
     },
   });
 
   useEffect(() => {
-    // Announce joining
     send({ type: "participant_joined", nickname });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLoadRestaurants = async () => {
@@ -82,7 +83,7 @@ export default function VotingRoom({
     }
   };
 
-  const handleSpin = async (winner: Restaurant) => {
+  const handleSpin = (winner: Restaurant) => {
     send({
       type: "spin_result",
       winner_id: winner.id,
@@ -99,7 +100,6 @@ export default function VotingRoom({
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      {/* Room header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
@@ -117,7 +117,6 @@ export default function VotingRoom({
           </div>
         </div>
 
-        {/* View toggle */}
         <div className="flex gap-1 p-1 rounded-xl bg-white/5">
           <button
             onClick={() => setView("vote")}
@@ -138,7 +137,6 @@ export default function VotingRoom({
         </div>
       </div>
 
-      {/* Load restaurants (host only, or if empty) */}
       {restaurants.length === 0 && (
         <div className="text-center py-16">
           {isHost ? (
@@ -160,7 +158,6 @@ export default function VotingRoom({
         </div>
       )}
 
-      {/* Vote view */}
       {view === "vote" && restaurants.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...restaurants]
@@ -177,7 +174,6 @@ export default function VotingRoom({
         </div>
       )}
 
-      {/* Spin view */}
       {view === "spin" && restaurants.length > 0 && (
         <SpinWheel
           restaurants={restaurants}

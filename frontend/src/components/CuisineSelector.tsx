@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 const CUISINES = [
   { emoji: "🍝", name: "Italian" },
   { emoji: "🌮", name: "Mexican" },

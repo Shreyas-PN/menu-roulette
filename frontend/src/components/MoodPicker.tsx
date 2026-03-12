@@ -21,8 +21,8 @@ export default function MoodPicker({ onCuisineSelected }: MoodPickerProps) {
     try {
       const result = await api.moodToCuisine(mood);
       onCuisineSelected(result.cuisine, result.reason);
-    } catch (e: any) {
-      setError(e.message || "AI couldn't figure out your vibe. Try again.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "AI couldn't figure out your vibe. Try again.");
     } finally {
       setLoading(false);
     }

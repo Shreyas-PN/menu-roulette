@@ -1,32 +1,26 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import Header from "@/components/Header";
 import VotingRoom from "@/components/VotingRoom";
 
 export default function RoomPage() {
   const params = useParams();
   const code = (params.code as string).toUpperCase();
-  const [ready, setReady] = useState(false);
-  const [participantId, setParticipantId] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [isHost, setIsHost] = useState(false);
 
-  useEffect(() => {
+  const session = useMemo(() => {
+    if (typeof window === "undefined") return null;
     const pid = sessionStorage.getItem("participantId");
     const name = sessionStorage.getItem("nickname");
     const host = sessionStorage.getItem("isHost");
-
     if (pid && name) {
-      setParticipantId(pid);
-      setNickname(name);
-      setIsHost(host === "true");
-      setReady(true);
+      return { participantId: pid, nickname: name, isHost: host === "true" };
     }
+    return null;
   }, []);
 
-  if (!ready) {
+  if (!session) {
     return (
       <div className="min-h-screen">
         <Header />
@@ -42,9 +36,9 @@ export default function RoomPage() {
       <Header />
       <VotingRoom
         roomCode={code}
-        participantId={participantId}
-        nickname={nickname}
-        isHost={isHost}
+        participantId={session.participantId}
+        nickname={session.nickname}
+        isHost={session.isHost}
       />
     </div>
   );

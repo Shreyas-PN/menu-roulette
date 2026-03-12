@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ThumbsUp, ThumbsDown, Star, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Restaurant } from "@/lib/types";
@@ -35,10 +36,13 @@ export default function RestaurantCard({
       {/* Photo */}
       {restaurant.photo_url && (
         <div className="h-36 overflow-hidden">
-          <img
+          <Image
             src={restaurant.photo_url}
             alt={restaurant.name}
             className="w-full h-full object-cover"
+            width={400}
+            height={144}
+            unoptimized
           />
         </div>
       )}

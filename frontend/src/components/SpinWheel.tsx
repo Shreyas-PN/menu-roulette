@@ -136,7 +136,7 @@ export default function SpinWheel({ restaurants, onSpinComplete, disabled }: Spi
           animate={{ opacity: 1, scale: 1 }}
           className="text-center p-6 rounded-2xl bg-orange-500/10 border border-orange-500/30"
         >
-          <p className="text-sm text-orange-400 mb-1">You're eating at...</p>
+          <p className="text-sm text-orange-400 mb-1">You&apos;re eating at...</p>
           <p className="text-2xl font-bold">{winner.name}</p>
           <p className="text-sm text-neutral-400 mt-1">{winner.address}</p>
         </motion.div>

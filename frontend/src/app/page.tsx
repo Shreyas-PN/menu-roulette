@@ -49,7 +49,6 @@ export default function Home() {
     setError("");
 
     try {
-      // Using OpenStreetMap Nominatim (free, no API key needed)
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           manualAddress.trim()
@@ -94,19 +93,17 @@ export default function Home() {
         budget,
       });
 
-      // Set cuisine if selected
       if (cuisine) {
         await api.setCuisine(result.room.code, cuisine);
       }
 
-      // Store participant info in sessionStorage
       sessionStorage.setItem("participantId", result.participant_id);
       sessionStorage.setItem("nickname", nickname.trim());
       sessionStorage.setItem("isHost", "true");
 
       router.push(`/room/${result.room.code}`);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -128,8 +125,8 @@ export default function Home() {
       sessionStorage.setItem("isHost", "false");
 
       router.push(`/room/${result.room.code}`);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -140,12 +137,11 @@ export default function Home() {
       <Header />
 
       <main className="max-w-md mx-auto px-4 py-12">
-        {/* Home screen */}
         {step === "home" && (
           <div className="space-y-8 text-center">
             <div className="space-y-3">
               <h2 className="text-4xl font-bold tracking-tight">
-                Can't decide <br /> where to eat?
+                Can&apos;t decide <br /> where to eat?
               </h2>
               <p className="text-neutral-400">
                 Spin the wheel. Let your friends vote. No more 45-minute debates.
@@ -175,7 +171,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Create room */}
         {step === "create" && (
           <div className="space-y-6">
             <button
@@ -187,7 +182,6 @@ export default function Home() {
 
             <h2 className="text-2xl font-bold">Set up your room</h2>
 
-            {/* Nickname */}
             <div className="space-y-2">
               <label className="text-sm text-neutral-400">Your name</label>
               <input
@@ -200,7 +194,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Location */}
             <div className="space-y-2">
               <label className="text-sm text-neutral-400">Location</label>
 
@@ -218,7 +211,6 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  {/* Toggle between GPS and manual */}
                   <div className="flex gap-1 p-1 rounded-xl bg-white/5">
                     <button
                       onClick={() => setLocationMode("gps")}
@@ -287,19 +279,16 @@ export default function Home() {
               )}
             </div>
 
-            {/* Budget */}
             <div className="space-y-2">
               <label className="text-sm text-neutral-400">Budget</label>
               <BudgetSlider selected={budget} onChange={setBudget} />
             </div>
 
-            {/* Cuisine */}
             <div className="space-y-2">
               <label className="text-sm text-neutral-400">Cuisine (optional)</label>
               <CuisineSelector selected={cuisine} onChange={setCuisine} />
             </div>
 
-            {/* AI Mood Picker */}
             <MoodPicker
               onCuisineSelected={(c, reason) => {
                 setCuisine(c);
@@ -316,7 +305,6 @@ export default function Home() {
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
-            {/* Create button */}
             <button
               onClick={handleCreate}
               disabled={loading || !nickname.trim() || !location}
@@ -330,7 +318,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Join room */}
         {step === "join" && (
           <div className="space-y-6">
             <button
