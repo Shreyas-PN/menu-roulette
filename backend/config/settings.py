@@ -93,7 +93,8 @@ REST_FRAMEWORK = {
 GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")  # "openai" or "gemini"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "groq")  # "openai", "gemini", or "groq"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
