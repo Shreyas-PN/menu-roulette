@@ -16,12 +16,13 @@ A real-time multiplayer food decision app. Create a room, invite friends, vote o
 <p align="center">
   <img src="docs/screenshots/home.png" width="45%" alt="Home page" />
   <img src="docs/screenshots/home2.png" width="45%" alt="Home page" />
-  <img src="docs/screenshots/setup.png" width="45%" alt="Room setup" />
 </p>
+<p align="center">
+  <img src="docs/screenshots/setup.png" width="45%" alt="Room setup" />
+  <img src="docs/screenshots/vibe-check.png" width="45%" alt="vibe-check" />
 <p align="center">
   <img src="docs/screenshots/vote.png" width="45%" alt="Voting on restaurants" />
   <img src="docs/screenshots/spin.png" width="45%" alt="Spin the wheel" />
-  <img src="docs/screenshots/vibe-check.png" width="45%" alt="vibe-check" />
 </p>
 
 ## Features
