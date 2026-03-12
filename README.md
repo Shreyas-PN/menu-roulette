@@ -21,6 +21,7 @@ A real-time multiplayer food decision app. Create a room, invite friends, vote o
 <p align="center">
   <img src="docs/screenshots/vote.png" width="45%" alt="Voting on restaurants" />
   <img src="docs/screenshots/spin.png" width="45%" alt="Spin the wheel" />
+  <img src="docs/screenshots/vibe-check.png" width="45%" alt="vibe-check" />
 </p>
 
 ## Features
